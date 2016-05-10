@@ -36,8 +36,6 @@
 
 ;;; Code:
 
-(defvar-local extrapolate--highlighted-text "")
-
 (define-minor-mode extrapolate-mode
   "Contextual live highlighting of text that matches (i.e. is equal to) with the marked region."
   nil nil nil
@@ -56,27 +54,26 @@
     (add-hook 'deactivate-mark-hook #'extrapolate--unhighlight-region nil t)))
 
 (defun extrapolate--highlight-region ()
+  (extrapolate--unhighlight-region)
   (if (use-region-p)
 	  (let ((str (buffer-substring-no-properties (region-beginning) (region-end))))
-	  	(if (not (or (string= str "")
-					 (string= str extrapolate--highlighted-text)))
+	  	(if (not (string= str ""))
 	  		(progn
-	  		  (extrapolate--unhighlight-region)
 	  		  (run-at-time 0.05 nil 'extrapolate--highlight-region2 str))
-	  	  (setq extrapolate--highlighted-text "")))
-	(setq extrapolate--highlighted-text "")))
+	  	  nil))
+    nil))
 
 (defun extrapolate--highlight-region2 (str)
-  (let ((str2 (buffer-substring-no-properties (region-beginning) (region-end))))
-	(if (string= str str2)
-		(progn
-		  (ov-set str 'face 'extrapolate 'extrapolate t)
-		  (setq extrapolate--highlighted-text str))
-	  (setq extrapolate--highlighted-text ""))))
+  (if (use-region-p)
+	  (let ((str2 (buffer-substring-no-properties (region-beginning) (region-end))))
+		(if (string= str str2)
+			(progn
+			  (ov-set str 'face 'extrapolate 'extrapolate t))
+		  nil))
+	nil))
 
 (defun extrapolate--unhighlight-region nil
-  (ov-clear 'extrapolate)
-  (setq extrapolate--highlighted-text ""))
+  (ov-clear 'extrapolate))
 
 (defface extrapolate
   '((t :inherit lazy-highlight))
@@ -84,6 +81,5 @@
   :group 'faces)
 
 (provide 'extrapolate)
-
 
 ;;; extrapolate.el ends here
