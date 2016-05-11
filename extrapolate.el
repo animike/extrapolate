@@ -36,44 +36,50 @@
 
 ;;; Code:
 
+(defvar extrapolate--highlighted-text "")
+
 (define-minor-mode extrapolate-mode
   "Contextual live highlighting of text that matches (i.e. is equal to) with the marked region."
   nil nil nil
-  (extrapolate--unhighlight-region)
-  (remove-hook 'activate-mark-hook #'extrapolate--highlight-region t)
+  (remove-hook 'activate-mark-hook #'extrapolate--run t)
+  (add-hook 'activate-mark-hook #'extrapolate--run nil t)
+  (remove-hook 'deactivate-mark-hook #'extrapolate--run t)
+  (add-hook 'deactivate-mark-hook #'extrapolate--run nil t)
   ;; as for GNU Emacs 25.0.93.1 (i686-pc-linux-gnu, X toolkit, Xaw scroll bars) of 2016-05-03
   ;; it seems that the following behaviour of activate-mark-hook described in its dosctring :
   ;; >> It is also run at the end of a command, if the mark is active and
   ;; >> it is possible that the region may have changed.
   ;; actually doesn't work. Thus let's add ourselves to post-command-hook...
-  (remove-hook 'post-command-hook #'extrapolate--highlight-region t)
-  (remove-hook 'deactivate-mark-hook #'extrapolate--unhighlight-region t)
-  (when extrapolate-mode
-    (add-hook 'activate-mark-hook #'extrapolate--highlight-region nil t)
-    (add-hook 'post-command-hook #'extrapolate--highlight-region nil t)
-    (add-hook 'deactivate-mark-hook #'extrapolate--unhighlight-region nil t)))
+  (remove-hook 'post-command-hook #'extrapolate--run t)
+  (add-hook 'post-command-hook #'extrapolate--run nil t))
 
-(defun extrapolate--highlight-region ()
-  (extrapolate--unhighlight-region)
-  (if (use-region-p)
-	  (let ((str (buffer-substring-no-properties (region-beginning) (region-end))))
-	  	(if (not (string= str ""))
-	  		(progn
-	  		  (run-at-time 0.05 nil 'extrapolate--highlight-region2 str))
-	  	  nil))
-    nil))
+(defun extrapolate--run ()
+  (run-at-time 0.01 nil 'extrapolate--run2))
 
-(defun extrapolate--highlight-region2 (str)
-  (if (use-region-p)
-	  (let ((str2 (buffer-substring-no-properties (region-beginning) (region-end))))
-		(if (string= str str2)
-			(progn
-			  (ov-set str 'face 'extrapolate 'extrapolate t))
-		  nil))
-	nil))
+(defun extrapolate--run2 nil
+  (let ((str (if (use-region-p)
+				 (buffer-substring-no-properties (region-beginning) (region-end))
+			   "")))
+	(if (string= str "")
+		(extrapolate--unhighlight-matches str)
+	  (progn
+		(extrapolate--highlight-matches str))
+	  nil)))
 
-(defun extrapolate--unhighlight-region nil
-  (ov-clear 'extrapolate))
+(defun extrapolate--highlight-matches (str)
+  (if (string= str extrapolate--highlighted-text)
+	  nil
+	(progn
+	  (ov-clear 'extrapolate)
+	  (ov-set str 'face 'extrapolate 'extrapolate t)
+	  (setq extrapolate--highlighted-text str))))
+
+(defun extrapolate--unhighlight-matches (str)
+  (if (string= str extrapolate--highlighted-text)
+	  nil
+	(progn
+	  (ov-clear 'extrapolate)
+	  (setq extrapolate--highlighted-text ""))))
 
 (defface extrapolate
   '((t :inherit lazy-highlight))
