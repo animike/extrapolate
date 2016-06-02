@@ -71,7 +71,7 @@
 	  nil
 	(progn
 	  (ov-clear 'extrapolate)
-	  (ov-set str 'face 'extrapolate 'extrapolate t)
+	  (ov-set (regexp-quote str) 'face 'extrapolate 'extrapolate t)
 	  (setq extrapolate--highlighted-text str))))
 
 (defun extrapolate--unhighlight-matches (str)
